@@ -58,15 +58,6 @@ object PriceFeeds {
         )
 
       def retrieveAggregatedPrice(): F[BigDecimal] = retrievePrices().map(median)
-
-      def schedule(delay: FiniteDuration): Stream[F, BigDecimal] =
-        Stream
-          .awakeEvery[F](delay)
-          .evalMap(_ => retrieveAggregatedPrice())
-          .handleErrorWith(error =>
-            Stream.eval(Async[F].delay(println(s"Error retrieving prices: ${error.getMessage}"))) >>
-              schedule(delay)
-          )
     }
 
   def createPriceFeeds[F[_]: Async](client: Client[F], priceFeedIds: NonEmptySet[PriceFeedId]): NonEmptyList[PriceFeed[F]] =

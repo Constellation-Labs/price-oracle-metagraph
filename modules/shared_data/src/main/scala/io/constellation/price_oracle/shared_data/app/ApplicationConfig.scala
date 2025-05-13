@@ -1,5 +1,7 @@
 package io.constellation.price_oracle.shared_data.app
 
+import scala.concurrent.duration.FiniteDuration
+
 import io.constellationnetwork.schema.swap.CurrencyId
 
 import io.constellation.price_oracle.shared_data.pricefeed.PriceFeedId
@@ -7,7 +9,8 @@ import io.constellation.price_oracle.shared_data.pricefeed.PriceFeedId.{GateIO, 
 
 case class ApplicationConfig(
   environment: ApplicationConfig.Environment,
-  priceFeeds: List[ApplicationConfig.PriceFeedConfig]
+  priceFeeds: List[ApplicationConfig.PriceFeedConfig],
+  pollInterval: FiniteDuration
 )
 
 object ApplicationConfig {

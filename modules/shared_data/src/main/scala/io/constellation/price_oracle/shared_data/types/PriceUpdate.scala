@@ -1,6 +1,7 @@
 package io.constellation.price_oracle.shared_data.types
 
 import io.constellationnetwork.currency.dataApplication.DataUpdate
+import io.constellationnetwork.schema.artifact.PricingUpdate
 import io.constellationnetwork.schema.swap.CurrencyId
 
 import derevo.circe.magnolia.{decoder, encoder}
@@ -11,4 +12,4 @@ import eu.timepit.refined.types.numeric.NonNegLong
 //import eu.timepit.refined.types.numeric.NonNegLong
 
 @derive(encoder, decoder)
-case class PriceUpdate(currencyId: CurrencyId, price: BigDecimal, timestamp: Long) extends DataUpdate
+case class PriceUpdate(update: PricingUpdate, timestamp: Long) extends DataUpdate
