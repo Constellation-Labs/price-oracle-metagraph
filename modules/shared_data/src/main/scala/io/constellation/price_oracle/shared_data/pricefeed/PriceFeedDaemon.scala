@@ -9,5 +9,5 @@ import io.constellation.price_oracle.shared_data.app.ApplicationConfig
 
 object PriceFeedDaemon {
   def make[F[_]: Async: Supervisor](priceFeedService: PriceFeedService[F], config: ApplicationConfig): Daemon[F] =
-    Daemon.periodic(priceFeedService.updatePrices(), config.pollInterval)
+    Daemon.periodic(priceFeedService.updatePrices(), config.intervals.poll)
 }

@@ -1,4 +1,4 @@
-import sbt._
+import sbt.*
 
 object Dependencies {
 
@@ -16,6 +16,7 @@ object Dependencies {
     "com.monovore" %% {
       if (artifact.isEmpty) "decline" else s"decline-$artifact"
     } % V.decline
+
   object Libraries {
     val tessellationSdk = tessellation("sdk")
     val tessellationNodeShared = tessellation("node-shared")

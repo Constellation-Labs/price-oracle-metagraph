@@ -32,6 +32,7 @@ object Main
     config <- ApplicationConfigOps.readDefault[IO].asResource
     _ = println(config)
     _ = println(config.priceFeeds.map(_.tickers))
+    _ = println((config.intervals.storage / config.intervals.poll).toInt)
     implicit0(sp: SecurityProvider[IO]) <- SecurityProvider.forAsync[IO]
     jsonBrotliBinaryCodec <- JsonBrotliBinaryCodec.forSync[IO].asResource
     jsonBase64BinaryCodec <- JsonWithBase64BinaryCodec.forSync[IO, PriceRecord].asResource

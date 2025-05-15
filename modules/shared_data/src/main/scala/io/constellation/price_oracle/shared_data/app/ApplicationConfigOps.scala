@@ -1,7 +1,8 @@
 package io.constellation.price_oracle.shared_data.app
 
 import cats.effect.kernel.Sync
-import cats.syntax.option._
+
+import scala.concurrent.duration.DurationInt
 
 import io.constellationnetwork.ext.http4s.AddressVar
 import io.constellationnetwork.schema.swap.CurrencyId
@@ -22,6 +23,18 @@ object ApplicationConfigOps {
 
 object ConfigReaders {
   implicit val currencyIdReader: ConfigReader[CurrencyId] = ConfigReader[String].map(s => AddressVar.unapply(s).map(CurrencyId(_)).get)
+
+  implicit val intervalsConfigReader: ConfigReader[IntervalsConfig] = deriveReader[IntervalsConfig].emap(cfg =>
+    Either.cond(
+      cfg.poll > 0.seconds && cfg.storage >= cfg.poll,
+      cfg,
+      CannotConvert(
+        cfg.toString,
+        "intervals",
+        "storage interval must be greater or equal to poll interval and poll interval must be greater than 0"
+      )
+    )
+  )
 
   implicit val priceFeedConfigReader: ConfigReader[PriceFeedConfig] = deriveReader[PriceFeedConfig].emap(cfg =>
     Either.cond(
