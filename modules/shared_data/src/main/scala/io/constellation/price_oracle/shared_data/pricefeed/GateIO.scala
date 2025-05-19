@@ -8,6 +8,8 @@ import cats.syntax.all._
 import org.http4s.client.Client
 import org.http4s.client.dsl.Http4sClientDsl
 import org.http4s.{Method, Request, Uri}
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 object GateIO {
   // Data sample:
@@ -19,6 +21,8 @@ object GateIO {
   def make[F[_]: Async](client: Client[F], symbol: String = "DAG_USDT"): PriceFeed[F] = new PriceFeed[F] with Http4sClientDsl[F] {
     val id: PriceFeedId = PriceFeedId.GateIO
 
+    def logger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLoggerFromName[F]("GateIO")
+
     def retrievePrice(): F[BigDecimal] = {
       import org.http4s.circe.CirceEntityCodec.circeEntityDecoder
 
@@ -28,6 +32,8 @@ object GateIO {
         method = Method.GET,
         uri = Uri.unsafeFromString(s"https://api.gateio.ws/api/v4/spot/candlesticks?currency_pair=$symbol&from=${now.getEpochSecond}")
       )
+
+      logger.debug(s"requesting $request")
 
       client
         .expect[List[Candlestick]](request)
@@ -39,6 +45,10 @@ object GateIO {
             // and that the close price is in the 3rd position
             BigDecimal(candlesticks.maxBy(_._1.toLong)._3)
           }
+        }
+        .onError {
+          case t: Throwable =>
+            logger.error(t)(s"Failed to get price from GateIO: ${t.getMessage}")
         }
     }
   }

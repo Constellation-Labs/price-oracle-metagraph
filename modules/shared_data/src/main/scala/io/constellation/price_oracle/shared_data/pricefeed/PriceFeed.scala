@@ -2,7 +2,6 @@ package io.constellation.price_oracle.shared_data.pricefeed
 
 import cats.data.{NonEmptyList, NonEmptySet}
 import cats.effect.Async
-import cats.kernel.Order
 import cats.syntax.all._
 
 import scala.concurrent.duration._
@@ -10,10 +9,9 @@ import scala.concurrent.duration._
 import derevo.cats.{eqv, order, show}
 import derevo.circe.magnolia.{decoder, encoder}
 import derevo.derive
-import fs2.Stream
+import io.constellation.price_oracle.shared_data.types.{PriceValue, PriceValues}
 import org.http4s.client.Client
 import retry.RetryPolicies._
-import retry._
 import retry.syntax.all._
 
 @derive(eqv, show, encoder, decoder, order)
@@ -32,8 +30,7 @@ trait PriceFeed[F[_]] {
 }
 
 trait PriceFeeds[F[_]] {
-  def retrieveAggregatedPrice(): F[BigDecimal]
-  def retrievePrices(): F[NonEmptyList[BigDecimal]]
+  def retrievePrices(): F[PriceValues]
 }
 
 object PriceFeeds {
@@ -43,21 +40,21 @@ object PriceFeeds {
   def make[F[_]: Async](priceFeeds: NonEmptyList[PriceFeed[F]], retryDelay: FiniteDuration = 1.second, numRetries: Int = 9): PriceFeeds[F] =
     new PriceFeeds[F] {
 
-      def retrievePrices(): F[NonEmptyList[BigDecimal]] =
+      def retrievePrices(): F[PriceValues] =
         (for {
-          prices <- priceFeeds.toList.traverse(feed => feed.retrievePrice().attempt.map(_.toOption)).map(_.flatten)
+          prices <- priceFeeds.toList
+            .traverse(feed => feed.retrievePrice().attempt.map(res => res.toOption.map(p => PriceValue(feed.id, p))))
+            .map(_.flatten)
           nel <-
             if (prices.isEmpty)
-              NoPriceData(s"All price feeds have failed").raiseError[F, NonEmptyList[BigDecimal]]
+              NoPriceData(s"All price feeds have failed").raiseError[F, NonEmptyList[PriceValue]]
             else
               NonEmptyList.fromList(prices).liftTo[F](NoPriceData(s"All price feeds have failed"))
-        } yield nel).retryingOnAllErrors(
+        } yield PriceValues(nel)).retryingOnAllErrors(
           policy = fibonacciBackoff(retryDelay).join(limitRetries(numRetries)),
           onError = (error, retryDetails) =>
             Async[F].delay(println(s"Failed to retrieve price, attempt ${retryDetails.retriesSoFar + 1}: ${error.getMessage}"))
         )
-
-      def retrieveAggregatedPrice(): F[BigDecimal] = retrievePrices().map(median)
     }
 
   def createPriceFeeds[F[_]: Async](client: Client[F], priceFeedIds: NonEmptySet[PriceFeedId]): NonEmptyList[PriceFeed[F]] =
@@ -69,15 +66,4 @@ object PriceFeeds {
       case PriceFeedId.KuCoin => KuCoin.make(client)
       case PriceFeedId.MEXC   => MEXC.make(client)
     }
-
-  def median(prices: NonEmptyList[BigDecimal]): BigDecimal = {
-    val arr = prices.toList.toArray.sorted
-    if (arr.length % 2 == 0) {
-      val i = arr.length / 2 - 1
-      val j = arr.length / 2
-      (arr(i) + arr(j)) / 2
-    } else {
-      arr(arr.length / 2)
-    }
-  }
 }

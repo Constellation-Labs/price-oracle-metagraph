@@ -114,6 +114,7 @@ lazy val dataL1 = (project in file("modules/data_l1"))
     resolvers += Resolver.mavenLocal,
     resolvers += Resolver.githubPackages("abankowski", "http-request-signer"),
     Defaults.itSettings,
+    commonTestSettings,
     libraryDependencies ++= Seq(
       CompilerPlugin.kindProjector,
       CompilerPlugin.betterMonadicFor,
