@@ -14,13 +14,13 @@ import io.circe.{KeyDecoder, KeyEncoder}
 import io.constellation.price_oracle.shared_data.pricefeed.PriceFeedId
 
 @derive(encoder, decoder)
-case class PriceOracleOnChainState(updates: List[PriceUpdate]) extends DataOnChainState
+case class PriceOracleOnChainState(updates: List[PriceUpdate] = List.empty) extends DataOnChainState
 
 @derive(encoder, decoder)
 case class PriceValue(priceFeedId: PriceFeedId, price: BigDecimal)
 
 @derive(encoder, decoder)
-case class PriceRecord(prices: NonEmptyList[PriceValue]) {
+case class PriceValues(prices: NonEmptyList[PriceValue]) {
   def median(): BigDecimal = {
     val arr = prices.toList.toArray.sortBy(_.price)
     if (arr.length % 2 == 0) {
@@ -34,7 +34,7 @@ case class PriceRecord(prices: NonEmptyList[PriceValue]) {
 }
 
 @derive(encoder, decoder)
-case class PriceOracleCalculatedState(priceState: Map[Option[CurrencyId], NonEmptyList[PriceRecord]] = Map.empty)
+case class PriceOracleCalculatedState(priceState: Map[Option[CurrencyId], NonEmptyList[PriceValues]] = Map.empty)
     extends DataCalculatedState {
   def combine(that: PriceOracleCalculatedState, maxSize: NonNegInt): PriceOracleCalculatedState =
     (this.priceState.keys ++ that.priceState.keys).toSet.foldLeft(PriceOracleCalculatedState()) { (acc, currencyId) =>

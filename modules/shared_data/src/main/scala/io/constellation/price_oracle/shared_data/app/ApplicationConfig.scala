@@ -2,6 +2,7 @@ package io.constellation.price_oracle.shared_data.app
 
 import scala.concurrent.duration.FiniteDuration
 
+import io.constellationnetwork.schema.priceOracle.TokenPair
 import io.constellationnetwork.schema.swap.CurrencyId
 
 import io.constellation.price_oracle.shared_data.pricefeed.PriceFeedId
@@ -24,7 +25,7 @@ object ApplicationConfig {
   case class IntervalsConfig(poll: FiniteDuration, storage: FiniteDuration)
 
   case class PriceFeedConfig(
-    currencyId: Option[CurrencyId],
+    tokenPair: TokenPair,
     gateioTicker: Option[String],
     kucoinTicker: Option[String],
     mexcTicker: Option[String]

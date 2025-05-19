@@ -14,7 +14,7 @@ import io.constellationnetwork.security.hash.Hash
 import eu.timepit.refined.types.numeric.NonNegInt
 import io.circe.syntax.EncoderOps
 import io.constellation.price_oracle.shared_data.app.ApplicationConfig
-import io.constellation.price_oracle.shared_data.types.{CalculatedState, PriceOracleCalculatedState, PriceRecord}
+import io.constellation.price_oracle.shared_data.types.{CalculatedState, PriceOracleCalculatedState, PriceValues}
 
 trait CalculatedStateService[F[_]] {
   def get: F[CalculatedState]
@@ -55,7 +55,7 @@ object CalculatedStateService {
       }
     }
 
-  def calculateAveragePrice(prices: NonEmptyList[PriceRecord]): BigDecimal = {
+  def calculateAveragePrice(prices: NonEmptyList[PriceValues]): BigDecimal = {
     val lambda = 0.25 // decay factor, can be adjusted between 0 and 1
     prices.tail.foldLeft(prices.head.median()) { (ewma, priceRecord) =>
       (lambda * priceRecord.median()) + ((1 - lambda) * ewma)

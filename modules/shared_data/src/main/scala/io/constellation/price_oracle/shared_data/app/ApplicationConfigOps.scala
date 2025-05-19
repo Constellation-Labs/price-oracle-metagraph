@@ -1,15 +1,17 @@
 package io.constellation.price_oracle.shared_data.app
 
 import cats.effect.kernel.Sync
+import cats.syntax.traverse._
 
 import scala.concurrent.duration.DurationInt
 
-import io.constellationnetwork.ext.http4s.AddressVar
-import io.constellationnetwork.schema.swap.CurrencyId
+import io.constellationnetwork.schema.priceOracle.TokenPair
+import io.constellationnetwork.schema.priceOracle.TokenPair.{BTC_USD, DAG_USD, ETH_USD}
 
+import ciris.ConfigValue
 import io.constellation.price_oracle.shared_data.app.ApplicationConfig._
 import pureconfig._
-import pureconfig.error.CannotConvert
+import pureconfig.error._
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.module.catseffect.syntax._
 
@@ -22,8 +24,6 @@ object ApplicationConfigOps {
 }
 
 object ConfigReaders {
-  implicit val currencyIdReader: ConfigReader[CurrencyId] = ConfigReader[String].map(s => AddressVar.unapply(s).map(CurrencyId(_)).get)
-
   implicit val intervalsConfigReader: ConfigReader[IntervalsConfig] = deriveReader[IntervalsConfig].emap(cfg =>
     Either.cond(
       cfg.poll > 0.seconds && cfg.storage >= cfg.poll,
@@ -35,6 +35,13 @@ object ConfigReaders {
       )
     )
   )
+
+  implicit val tokenPair: ConfigReader[TokenPair] = ConfigReader.fromString[TokenPair] {
+    case "DAG_USD" => Right(DAG_USD)
+    case "BTC_USD" => Right(BTC_USD)
+    case "ETH_USD" => Right(ETH_USD)
+    case other     => Left(CannotConvert(other, "token-pair", "unsupported token pair"))
+  }
 
   implicit val priceFeedConfigReader: ConfigReader[PriceFeedConfig] = deriveReader[PriceFeedConfig].emap(cfg =>
     Either.cond(
@@ -52,5 +59,5 @@ object ConfigReaders {
     case other            => Left(CannotConvert(other, "Environment", "Must be 'dev', 'testnet', 'integrationnet', or 'mainnet'"))
   }
 
-  implicit val applicationConfigReader: ConfigReader[ApplicationConfig] = deriveReader
+  implicit val applicationConfigReader: ConfigReader[ApplicationConfig] = deriveReader[ApplicationConfig]
 }

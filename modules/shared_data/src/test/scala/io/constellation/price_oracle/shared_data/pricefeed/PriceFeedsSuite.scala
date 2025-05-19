@@ -21,25 +21,15 @@ object PriceFeedsSuite extends MutableIOSuite {
       .withTimeout(10.seconds)
       .build
 
-  test("should compute median value") { _ =>
-    IO(
-      expect.all(
-        PriceFeeds.median(prices(1)) === BigDecimal("1"),
-        PriceFeeds.median(prices(1, 2)) === BigDecimal("1.5"),
-        PriceFeeds.median(prices(1, 2, 3)) === BigDecimal("2")
-      )
-    )
-  }
-
   test("should retrieve non-zero DAG price from 3 price feeds") { client =>
     val feeds = PriceFeeds.createPriceFeeds(client, NonEmptySet.of(PriceFeedId.GateIO, PriceFeedId.KuCoin, PriceFeedId.MEXC))
     val priceFeeds = PriceFeeds.make(feeds, numRetries = 0)
     for {
-      prices <- priceFeeds.retrievePrices()
+      priceValues <- priceFeeds.retrievePrices()
     } yield
       expect.all(
-        prices.size === 3,
-        prices.forall(_ > 0)
+        priceValues.prices.size === 3,
+        priceValues.prices.forall(_.price > 0)
       )
   }
 
@@ -52,11 +42,11 @@ object PriceFeedsSuite extends MutableIOSuite {
 
     val priceFeeds = PriceFeeds.make(feeds, numRetries = 0)
     for {
-      prices <- priceFeeds.retrievePrices()
+      priceValues <- priceFeeds.retrievePrices()
     } yield
       expect.all(
-        prices.size === 2,
-        prices.forall(_ > 0)
+        priceValues.prices.size === 2,
+        priceValues.prices.forall(_.price > 0)
       )
   }
 
@@ -76,5 +66,4 @@ object PriceFeedsSuite extends MutableIOSuite {
     }
   }
 
-  private def prices(numbers: Int*): NonEmptyList[BigDecimal] = NonEmptyList.fromListUnsafe(numbers.map(BigDecimal(_)).toList)
 }
