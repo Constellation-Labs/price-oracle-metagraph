@@ -4,18 +4,21 @@ import cats.data.NonEmptyList
 import cats.effect.Async
 import cats.syntax.all._
 
+import io.constellationnetwork.schema.epoch.EpochProgress
+
+import eu.timepit.refined.types.numeric.NonNegLong
 import io.constellation.price_oracle.shared_data.app.ApplicationConfig
 import org.http4s.client.Client
 
 trait PriceFeedService[F[_]] {
-  def updatePrices(): F[Unit]
+  def retrievePrices(): F[Unit]
 }
 
 object PriceFeedService {
   def make[F[_]: Async](config: ApplicationConfig, client: Client[F], priceUpdateFunction: PriceUpdateFunction[F]): PriceFeedService[F] = {
     val priceFeeds = config.priceFeeds.map { priceFeedConfig =>
       (
-        priceFeedConfig.currencyId,
+        priceFeedConfig.tokenPair,
         PriceFeeds.make(NonEmptyList.fromListUnsafe(priceFeedConfig.tickers.map {
           case (PriceFeedId.GateIO, ticker) => GateIO.make(client, ticker)
           case (PriceFeedId.KuCoin, ticker) => KuCoin.make(client, ticker)
@@ -24,11 +27,11 @@ object PriceFeedService {
       )
     }
     new PriceFeedService[F] {
-      override def updatePrices(): F[Unit] = priceFeeds.traverse {
-        case (currencyId, priceFeed) =>
+      override def retrievePrices(): F[Unit] = priceFeeds.traverse {
+        case (tokenPair, priceFeed) =>
           priceFeed
-            .retrieveAggregatedPrice()
-            .flatMap(price => priceUpdateFunction(currencyId, price))
+            .retrievePrices()
+            .flatMap(prices => priceUpdateFunction(tokenPair, prices))
       }.void
     }
   }

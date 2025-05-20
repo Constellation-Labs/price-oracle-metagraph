@@ -11,12 +11,11 @@ import io.constellationnetwork.currency.l1.CurrencyL1App
 import io.constellationnetwork.ext.cats.effect.ResourceIO
 import io.constellationnetwork.json.{JsonSerializer => JsonBrotliBinaryCodec}
 import io.constellationnetwork.schema.cluster.ClusterId
-import io.constellationnetwork.schema.priceOracle.PriceRecord
 import io.constellationnetwork.schema.semver.{MetagraphVersion, TessellationVersion}
 import io.constellationnetwork.security.{Hasher, SecurityProvider}
 
 import io.constellation.price_oracle.shared_data.app.ApplicationConfigOps
-import io.constellation.price_oracle.shared_data.types.codecs.{HasherSelector, JsonBinaryCodec, JsonWithBase64BinaryCodec}
+import io.constellation.price_oracle.shared_data.types.codecs.{HasherSelector, JsonBinaryCodec}
 import io.constellation.price_oracle.shared_data.validations.ValidationService
 
 object Main
@@ -31,10 +30,8 @@ object Main
   override def dataApplication: Option[Resource[IO, BaseDataApplicationL1Service[IO]]] = (for {
     config <- ApplicationConfigOps.readDefault[IO].asResource
     _ = println(config)
-    _ = println(config.priceFeeds.map(_.tickers))
     implicit0(sp: SecurityProvider[IO]) <- SecurityProvider.forAsync[IO]
     jsonBrotliBinaryCodec <- JsonBrotliBinaryCodec.forSync[IO].asResource
-    jsonBase64BinaryCodec <- JsonWithBase64BinaryCodec.forSync[IO, PriceRecord].asResource
     jsonBinaryCodec <- JsonBinaryCodec.forSync[IO].asResource
     hasherBrotli = {
       implicit val serializer: JsonBrotliBinaryCodec[IO] = jsonBrotliBinaryCodec
@@ -47,6 +44,6 @@ object Main
     implicit0(hasherSelector: HasherSelector[IO]) = HasherSelector.forSync(hasherBrotli, hasherCurrent)
 
     validationService = ValidationService.make[IO](config)
-    l1Service = DataL1Service.make[IO](validationService) // , jsonBase64BinaryCodec, jsonBinaryCodec)
+    l1Service = DataL1Service.make[IO](validationService, jsonBinaryCodec)
   } yield l1Service).some
 }

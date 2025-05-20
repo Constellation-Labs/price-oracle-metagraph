@@ -1,9 +1,9 @@
-import sbt._
+import sbt.*
 
 object Dependencies {
 
   object V {
-    val tessellation: String = sys.env.getOrElse("TESSELLATION_VERSION", "3.0.1-rc.7-12-9dfdee86-SNAPSHOT")
+    val tessellation: String = sys.env.getOrElse("TESSELLATION_VERSION", "3.0.1-rc.7-17-f21ee499-SNAPSHOT")
     val decline = "2.4.1"
     val weaver = "0.8.1"
     val catsEffectTestkit = "3.4.7"
@@ -16,11 +16,13 @@ object Dependencies {
     "com.monovore" %% {
       if (artifact.isEmpty) "decline" else s"decline-$artifact"
     } % V.decline
+
   object Libraries {
     val tessellationSdk = tessellation("sdk")
-    val tessellationNodeShared = tessellation("node-shared")
-    val tessellationCurrencyL0 = tessellation("currency-l0")
-    val tessellationCurrencyL1 = tessellation("currency-l1")
+//    val tessellationNodeShared = tessellation("node-shared")
+//    val tessellationCurrencyL0 = tessellation("currency-l0")
+//    val tessellationCurrencyL1 = tessellation("currency-l1")
+//    val tessellationSchema = tessellation("schema")
     val declineCore = decline()
     val declineEffect = decline("effect")
     val declineRefined = decline("refined")
