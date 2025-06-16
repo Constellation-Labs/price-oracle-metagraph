@@ -1,26 +1,29 @@
-import sbt._
+import sbt.*
 
 object Dependencies {
 
   object V {
-    val tessellation: String = sys.env.getOrElse("TESSELLATION_VERSION", "3.0.1-rc.7-12-9dfdee86-SNAPSHOT")
+    val tessellation: String = sys.env.getOrElse("TESSELLATION_VERSION", "99.99.99-SNAPSHOT")
     val decline = "2.4.1"
-    val weaver = "0.8.1"
-    val catsEffectTestkit = "3.4.7"
-    val organizeImports = "0.5.0"
+    val weaver = "0.8.4"
+    val catsEffectTestkit = "3.6.1"
+    val organizeImports = "0.6.0"
   }
 
-  def tessellation(artifact: String): ModuleID = "io.constellationnetwork" %% s"tessellation-$artifact" % V.tessellation
+//  def tessellation(artifact: String): ModuleID = "io.constellationnetwork" %% s"tessellation-$artifact" % V.tessellation
+  def tessellation(artifact: String): ModuleID = {
+    val version = V.tessellation
+    println(s"Using tessellation version: $version") // Debug logging
+    "io.constellationnetwork" %% s"tessellation-$artifact" % version
+  }
 
   def decline(artifact: String = ""): ModuleID =
     "com.monovore" %% {
       if (artifact.isEmpty) "decline" else s"decline-$artifact"
     } % V.decline
+
   object Libraries {
     val tessellationSdk = tessellation("sdk")
-    val tessellationNodeShared = tessellation("node-shared")
-    val tessellationCurrencyL0 = tessellation("currency-l0")
-    val tessellationCurrencyL1 = tessellation("currency-l1")
     val declineCore = decline()
     val declineEffect = decline("effect")
     val declineRefined = decline("refined")
