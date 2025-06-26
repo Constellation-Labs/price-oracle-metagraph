@@ -12,6 +12,7 @@ import scala.concurrent.duration.DurationInt
 
 import io.constellationnetwork.currency.dataApplication.{DataState, L0NodeContext}
 import io.constellationnetwork.currency.schema.currency.{CurrencyIncrementalSnapshot, CurrencySnapshotInfo}
+import io.constellationnetwork.domain.seedlist.SeedlistEntry
 import io.constellationnetwork.ext.cats.effect.ResourceIO
 import io.constellationnetwork.json.JsonSerializer
 import io.constellationnetwork.schema.ID.Id
@@ -222,6 +223,8 @@ object L0CombinerServiceSuite extends MutableIOSuite {
       override def securityProvider: SecurityProvider[IO] = sp
 
       override def getCurrencyId: IO[CurrencyId] = ???
+
+      override def getMetagraphL0Seedlist: Option[Set[SeedlistEntry]] = ???
     }.pure[IO]
 
   private def signed(u: PriceUpdate)(implicit hasher: Hasher[IO], sp: SecurityProvider[IO], kp: KeyPair): IO[Signed[PriceUpdate]] =
