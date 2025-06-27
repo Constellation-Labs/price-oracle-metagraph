@@ -13,6 +13,7 @@ import scala.concurrent.duration.DurationInt
 
 import io.constellationnetwork.currency.dataApplication.{DataState, L0NodeContext, L1NodeContext}
 import io.constellationnetwork.currency.schema.currency
+import io.constellationnetwork.domain.seedlist.SeedlistEntry
 import io.constellationnetwork.ext.cats.effect.ResourceIO
 import io.constellationnetwork.json.JsonSerializer
 import io.constellationnetwork.schema.ID.Id
@@ -305,6 +306,8 @@ object ValidationServiceSuite extends MutableIOSuite {
     override def securityProvider: SecurityProvider[IO] = ???
 
     override def getCurrencyId: IO[CurrencyId] = ???
+
+    override def getMetagraphL0Seedlist: Option[Set[SeedlistEntry]] = ???
   }
 
   private def mkL1NodeContext = new L1NodeContext[IO] {
