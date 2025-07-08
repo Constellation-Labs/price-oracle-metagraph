@@ -42,11 +42,12 @@ object ValidationService {
     ): F[DataApplicationValidationErrorOr[Unit]] =
       for {
         epochR <- validateEpochProgress(signedUpdate, state.calculated)
+        uniqueR = validateUniqueness(signedUpdate, state.calculated)
         address <- signedUpdate.proofs.head.id.toAddress
         signedR <- signatureValidations(signedUpdate, address)
         pricesR = validatePrices(signedUpdate.value)
         seedlistR = validateSeedList(signedUpdate)
-      } yield signedR.productR(pricesR).productR(epochR).productR(seedlistR)
+      } yield signedR.productR(pricesR).productR(epochR).productR(seedlistR).productR(uniqueR)
 
     override def validateData(
       signedUpdates: NonEmptyList[Signed[PriceUpdate]],
@@ -102,6 +103,18 @@ object ValidationService {
         }
       }
     }
+
+    private def validateUniqueness(
+      signedUpdate: Signed[PriceUpdate],
+      state: PriceOracleCalculatedState
+    ): DataApplicationValidationErrorOr[Unit] = {
+      val alreadyExists = state.priceState
+        .get(signedUpdate.tokenPair)
+        .flatMap(_.get(signedUpdate.proofs.head.id))
+        .exists(_.contains(signedUpdate.value))
+      DataPointAlreadyExists.unlessA(!alreadyExists)
+    }
+
   }
 
   case object MultipleSignatures extends DataApplicationValidationError {
@@ -114,6 +127,10 @@ object ValidationService {
 
   case object InvalidPrice extends DataApplicationValidationError {
     val message = "Invalid price"
+  }
+
+  case object DataPointAlreadyExists extends DataApplicationValidationError {
+    val message = "Data point already exists"
   }
 
   case class UnknownPeer(nodeId: Id) extends DataApplicationValidationError {
