@@ -76,9 +76,5 @@ object CalculatedStateService {
   }
 
   def getEpochProgress[F[_]: Async](context: L0NodeContext[F]) =
-    OptionT(context.getLastSynchronizedGlobalSnapshot).map(_.epochProgress).getOrElseF {
-      val message = "Could not get last synchronized global snapshot data"
-      new Exception(message).raiseError[F, EpochProgress]
-    }
-
+    context.getLastSynchronizedGlobalSnapshot.map(_.map(_.epochProgress).getOrElse(EpochProgress.MinValue))
 }

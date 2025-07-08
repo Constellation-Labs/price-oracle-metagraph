@@ -56,7 +56,19 @@ object PriceUpdateFunction {
               config.dataL1ServerUri
             ).withHeaders(Headers("Content-Type" -> "application/json"))
 
-            _ <- client.expect[Unit](request)
+            _ <- client.run(request).use { response =>
+              if (response.status.isSuccess) {
+                response.as[Unit]
+              } else {
+                (for {
+                  body <- response.as[String]
+                  _ <- logger.error(s"HTTP ${response.status.code} from ${config.dataL1ServerUri}: $body")
+                  res <- response.as[Unit]
+                } yield res).onError {
+                  case e: Throwable => logger.error(s"Cannot send HTTP request to ${config.dataL1ServerUri}: ${e.getMessage}")
+                }
+              }
+            }
           } yield ()
         }
       }
