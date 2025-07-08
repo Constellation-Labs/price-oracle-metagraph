@@ -11,6 +11,8 @@ import derevo.circe.magnolia.{decoder, encoder}
 import derevo.derive
 import io.constellation.price_oracle.shared_data.types.{PriceValue, PriceValues}
 import org.http4s.client.Client
+import org.typelevel.log4cats.SelfAwareStructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import retry.RetryPolicies._
 import retry.syntax.all._
 
@@ -39,6 +41,7 @@ object PriceFeeds {
 
   def make[F[_]: Async](priceFeeds: NonEmptyList[PriceFeed[F]], retryDelay: FiniteDuration = 1.second, numRetries: Int = 9): PriceFeeds[F] =
     new PriceFeeds[F] {
+      private def logger: SelfAwareStructuredLogger[F] = Slf4jLogger.getLogger[F]
 
       def retrievePrices(): F[PriceValues] =
         (for {
@@ -53,7 +56,7 @@ object PriceFeeds {
         } yield PriceValues(nel)).retryingOnAllErrors(
           policy = fibonacciBackoff(retryDelay).join(limitRetries(numRetries)),
           onError = (error, retryDetails) =>
-            Async[F].delay(println(s"Failed to retrieve price, attempt ${retryDetails.retriesSoFar + 1}: ${error.getMessage}"))
+            Async[F].defer(logger.error(s"Failed to retrieve price, attempt ${retryDetails.retriesSoFar + 1}: ${error.getMessage}"))
         )
     }
 

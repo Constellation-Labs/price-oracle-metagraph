@@ -221,6 +221,47 @@ object ValidationServiceSuite extends MutableIOSuite {
       )
   }
 
+  test("validateUniqueness should prevent duplicate price updates") { res =>
+    implicit val (sp, h, kp) = res
+    implicit val context: L0NodeContext[IO] = mkL0NodeContext
+
+    val v = mkValidationService
+
+    for {
+      // Create initial signed update
+      signedUpdate1 <- signed(priceUpdate(1))
+      nodeId = signedUpdate1.proofs.head.id
+
+      // Create state with the first update
+      stateWithUpdate = DataState(
+        PriceOracleOnChainState(),
+        PriceOracleCalculatedState(priceState = Map(DAG_USD -> Map(nodeId -> List(signedUpdate1))))
+      )
+
+      // Try to add the same update again (should fail)
+      duplicateResult <- v.validateData(NonEmptyList.of(signedUpdate1), stateWithUpdate)
+
+      // Create a different update with same price but different epoch (should succeed)
+      signedUpdate2 <- signed(priceUpdate(1, epochProgress = EpochProgress(NonNegLong(1))))
+      differentEpochResult <- v.validateData(NonEmptyList.of(signedUpdate2), stateWithUpdate)
+
+      // Create a different update with different price (should succeed)
+      signedUpdate3 <- signed(priceUpdate(2))
+      differentPriceResult <- v.validateData(NonEmptyList.of(signedUpdate3), stateWithUpdate)
+
+      // Create a different update with different price feed (should succeed)
+      signedUpdate4 <- signed(priceUpdate(1, priceFeedId = PriceFeedId.KuCoin))
+      differentPriceFeedResult <- v.validateData(NonEmptyList.of(signedUpdate4), stateWithUpdate)
+
+    } yield
+      expect.all(
+        duplicateResult == ValidationService.DataPointAlreadyExists.invalidNec,
+        differentEpochResult == Valid(()),
+        differentPriceResult == Valid(()),
+        differentPriceFeedResult == Valid(())
+      )
+  }
+
   private def signed(update: PriceUpdate)(implicit kp: KeyPair, sp: SecurityProvider[IO], h: Hasher[IO]) = Signed.forAsyncHasher(update, kp)
 
   private def priceUpdate(n: Int, priceFeedId: PriceFeedId = GateIO, epochProgress: EpochProgress = EpochProgress.MinValue): PriceUpdate =
