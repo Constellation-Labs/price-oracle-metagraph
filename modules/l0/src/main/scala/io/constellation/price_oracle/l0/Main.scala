@@ -7,6 +7,7 @@ import cats.effect.{IO, Resource}
 import cats.syntax.option._
 
 import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
 
 import io.constellationnetwork.BuildInfo
 import io.constellationnetwork.currency.dataApplication.BaseDataApplicationL0Service
@@ -19,7 +20,6 @@ import io.constellationnetwork.node.shared.resources.MkHttpClient
 import io.constellationnetwork.schema.cluster.ClusterId
 import io.constellationnetwork.schema.epoch.EpochProgress
 import io.constellationnetwork.schema.semver.{MetagraphVersion, TessellationVersion}
-import io.constellationnetwork.security.signature.SignedValidator
 import io.constellationnetwork.security.{Hasher, SecurityProvider}
 
 import io.constellation.price_oracle.shared_data.app.ApplicationConfigOps
@@ -96,9 +96,9 @@ object Main
       .use { httpClient =>
         val priceUpdateFunction = PriceUpdateFunction.make[IO](config, keyPair.toOption, httpClient, globalSnapshotsStorage)
         val priceFeedService = PriceFeedService.make[IO](config, httpClient, priceUpdateFunction)
-        logger.info("Starting price feed daemon")
 
-        PriceFeedDaemon.make[IO](priceFeedService, intervalsConfig).start.void
+        logger.info("Starting price feed daemon") >>
+          PriceFeedDaemon.make[IO](priceFeedService, intervalsConfig).start.void
       }
       .asResource
 

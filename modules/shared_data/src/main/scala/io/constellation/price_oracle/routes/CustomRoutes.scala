@@ -4,13 +4,12 @@ import cats.effect.Async
 import cats.syntax.all._
 
 import io.constellationnetwork.routes.internal._
-import io.constellationnetwork.security.SecurityProvider
 
 import derevo.circe.magnolia.{decoder, encoder}
 import derevo.derive
 import eu.timepit.refined.auto._
 import io.constellation.price_oracle.shared_data.calculated_state.CalculatedStateService
-import io.constellation.price_oracle.shared_data.types.codecs.{HasherSelector, JsonWithBase64BinaryCodec}
+import io.constellation.price_oracle.shared_data.types.codecs.JsonWithBase64BinaryCodec
 import io.constellation.price_oracle.shared_data.types.{PriceOracleCalculatedState, PriceUpdate}
 import org.http4s.circe.CirceEntityCodec._
 import org.http4s.dsl.Http4sDsl
@@ -19,7 +18,7 @@ import org.http4s.{HttpRoutes, Response}
 import org.typelevel.log4cats.SelfAwareStructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
-case class CustomRoutes[F[_]: Async: HasherSelector: SecurityProvider](
+case class CustomRoutes[F[_]: Async](
   calculatedStateService: CalculatedStateService[F],
   dataUpdateCodec: JsonWithBase64BinaryCodec[F, PriceUpdate]
 ) extends Http4sDsl[F]

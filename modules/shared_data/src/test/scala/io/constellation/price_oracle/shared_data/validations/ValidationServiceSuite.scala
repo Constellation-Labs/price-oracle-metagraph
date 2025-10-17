@@ -18,13 +18,14 @@ import io.constellationnetwork.ext.cats.effect.ResourceIO
 import io.constellationnetwork.json.JsonSerializer
 import io.constellationnetwork.schema.ID.Id
 import io.constellationnetwork.schema._
+import io.constellationnetwork.schema.address.Address
 import io.constellationnetwork.schema.epoch.EpochProgress
 import io.constellationnetwork.schema.height.{Height, SubHeight}
 import io.constellationnetwork.schema.peer.PeerId
 import io.constellationnetwork.schema.priceOracle.TokenPair.DAG_USD
 import io.constellationnetwork.schema.swap.CurrencyId
 import io.constellationnetwork.security._
-import io.constellationnetwork.security.hash.{Hash, ProofsHash}
+import io.constellationnetwork.security.hash.Hash
 import io.constellationnetwork.security.hex.Hex
 import io.constellationnetwork.security.signature.Signed
 import io.constellationnetwork.security.signature.signature.{Signature, SignatureProof}
@@ -144,7 +145,7 @@ object ValidationServiceSuite extends MutableIOSuite {
       id = signed0.proofs.head.id
 
       state =
-        DataState(PriceOracleOnChainState(), PriceOracleCalculatedState(priceState = Map(DAG_USD -> Map(id -> List(signed0)))))
+        DataState(PriceOracleOnChainState(), PriceOracleCalculatedState(priceState = SortedMap(DAG_USD -> SortedMap(id -> List(signed0)))))
 
       signed1 <- signed(priceUpdate(1, epochProgress = EpochProgress(NonNegLong(6))))
       invalid1 <- v.validateData(NonEmptyList.of(signed1), state)
@@ -153,7 +154,10 @@ object ValidationServiceSuite extends MutableIOSuite {
       valid <- v.validateData(NonEmptyList.of(signed2), state)
 
       state =
-        DataState(PriceOracleOnChainState(), PriceOracleCalculatedState(priceState = Map(DAG_USD -> Map(id -> List(signed0, signed2)))))
+        DataState(
+          PriceOracleOnChainState(),
+          PriceOracleCalculatedState(priceState = SortedMap(DAG_USD -> SortedMap(id -> List(signed0, signed2))))
+        )
 
       signed3 <- signed(priceUpdate(3, epochProgress = EpochProgress(NonNegLong(8))))
       invalid2 <- v.validateData(NonEmptyList.of(signed3), state)
@@ -235,7 +239,7 @@ object ValidationServiceSuite extends MutableIOSuite {
       // Create state with the first update
       stateWithUpdate = DataState(
         PriceOracleOnChainState(),
-        PriceOracleCalculatedState(priceState = Map(DAG_USD -> Map(nodeId -> List(signedUpdate1))))
+        PriceOracleCalculatedState(priceState = SortedMap(DAG_USD -> SortedMap(nodeId -> List(signedUpdate1))))
       )
 
       // Try to add the same update again (should fail)
@@ -287,55 +291,49 @@ object ValidationServiceSuite extends MutableIOSuite {
   private def mkValidationService(implicit sp: SecurityProvider[IO], hasher: Hasher[IO]) = ValidationService.make[IO](config)
 
   private def mkL0NodeContext = new L0NodeContext[IO] {
-    override def getLastSynchronizedGlobalSnapshot: IO[Option[Hashed[GlobalIncrementalSnapshot]]] = Hashed(
-      Signed(
-        GlobalIncrementalSnapshot(
-          ordinal = SnapshotOrdinal.MinValue,
-          height = Height.MinValue,
-          subHeight = SubHeight.MinValue,
-          lastSnapshotHash = Hash.empty,
-          blocks = SortedSet(),
-          stateChannelSnapshots = SortedMap(),
-          rewards = SortedSet(),
-          delegateRewards = None,
-          epochProgress = EpochProgress.MinValue,
-          nextFacilitators = NonEmptyList.of(PeerId.apply(Hex("00"))),
-          tips = SnapshotTips(deprecated = SortedSet(), remainedActive = SortedSet()),
-          stateProof = GlobalSnapshotStateProof(
-            lastStateChannelSnapshotHashesProof = Hash.empty,
-            lastTxRefsProof = Hash.empty,
-            balancesProof = Hash.empty,
-            lastCurrencySnapshotsProof = None,
-            activeAllowSpends = None,
-            activeTokenLocks = None,
-            tokenLockBalances = None,
-            lastAllowSpendRefs = None,
-            lastTokenLockRefs = None,
-            updateNodeParameters = None,
-            activeDelegatedStakes = None,
-            delegatedStakesWithdrawals = None,
-            activeNodeCollaterals = None,
-            nodeCollateralWithdrawals = None,
-            priceState = None,
-            lastGlobalSnapshotsWithCurrency = None
-          ),
-          allowSpendBlocks = None,
-          tokenLockBlocks = None,
-          spendActions = None,
+    override def getLastSynchronizedGlobalSnapshot: IO[Option[GlobalIncrementalSnapshot]] =
+      GlobalIncrementalSnapshot(
+        ordinal = SnapshotOrdinal.MinValue,
+        height = Height.MinValue,
+        subHeight = SubHeight.MinValue,
+        lastSnapshotHash = Hash.empty,
+        blocks = SortedSet(),
+        stateChannelSnapshots = SortedMap(),
+        rewards = SortedSet(),
+        delegateRewards = None,
+        epochProgress = EpochProgress.MinValue,
+        nextFacilitators = NonEmptyList.of(PeerId.apply(Hex("00"))),
+        tips = SnapshotTips(deprecated = SortedSet(), remainedActive = SortedSet()),
+        stateProof = GlobalSnapshotStateProof(
+          lastStateChannelSnapshotHashesProof = Hash.empty,
+          lastTxRefsProof = Hash.empty,
+          balancesProof = Hash.empty,
+          lastCurrencySnapshotsProof = None,
+          activeAllowSpends = None,
+          activeTokenLocks = None,
+          tokenLockBalances = None,
+          lastAllowSpendRefs = None,
+          lastTokenLockRefs = None,
           updateNodeParameters = None,
-          artifacts = None,
           activeDelegatedStakes = None,
           delegatedStakesWithdrawals = None,
           activeNodeCollaterals = None,
-          nodeCollateralWithdrawals = None
+          nodeCollateralWithdrawals = None,
+          priceState = None,
+          lastGlobalSnapshotsWithCurrency = None
         ),
-        proofs = NonEmptySet.of(SignatureProof(id = Id(Hex("00")), signature = Signature(Hex("00"))))
-      ),
-      hash = Hash.empty,
-      proofsHash = ProofsHash("")
-    ).some.pure[IO]
+        allowSpendBlocks = None,
+        tokenLockBlocks = None,
+        spendActions = None,
+        updateNodeParameters = None,
+        artifacts = None,
+        activeDelegatedStakes = None,
+        delegatedStakesWithdrawals = None,
+        activeNodeCollaterals = None,
+        nodeCollateralWithdrawals = None
+      ).some.pure[IO]
 
-    override def getLastSynchronizedGlobalSnapshotCombined: IO[Option[(Hashed[GlobalIncrementalSnapshot], GlobalSnapshotInfo)]] = ???
+    override def getLastSynchronizedGlobalSnapshotCombined: IO[Option[(GlobalIncrementalSnapshot, GlobalSnapshotInfo)]] = ???
 
     override def getLastCurrencySnapshot: IO[Option[Hashed[currency.CurrencyIncrementalSnapshot]]] = ???
 
@@ -349,6 +347,11 @@ object ValidationServiceSuite extends MutableIOSuite {
     override def getCurrencyId: IO[CurrencyId] = ???
 
     override def getMetagraphL0Seedlist: Option[Set[SeedlistEntry]] = ???
+
+    override def getLastSynchronizedAllowSpends
+      : IO[Option[SortedMap[Option[Address], SortedMap[Address, SortedSet[Signed[swap.AllowSpend]]]]]] = ???
+
+    override def getLastSynchronizedTokenLocks: IO[Option[SortedMap[Address, SortedSet[Signed[tokenLock.TokenLock]]]]] = ???
   }
 
   private def mkL1NodeContext = new L1NodeContext[IO] {
