@@ -5,7 +5,6 @@ import cats.effect.std.Supervisor
 
 import io.constellationnetwork.node.shared.domain.Daemon
 
-import io.constellation.price_oracle.shared_data.app.ApplicationConfig
 import io.constellation.price_oracle.shared_data.app.ApplicationConfig.IntervalsConfig
 
 object PriceFeedDaemon {

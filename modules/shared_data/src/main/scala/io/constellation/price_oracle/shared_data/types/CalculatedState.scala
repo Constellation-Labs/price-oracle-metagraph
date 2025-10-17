@@ -2,6 +2,8 @@ package io.constellation.price_oracle.shared_data.types
 
 import cats.data.NonEmptyList
 
+import scala.collection.immutable.SortedMap
+
 import io.constellationnetwork.currency.dataApplication.{DataCalculatedState, DataOnChainState, DataUpdate}
 import io.constellationnetwork.schema.ID.Id
 import io.constellationnetwork.schema.SnapshotOrdinal
@@ -49,13 +51,13 @@ case class PriceUpdate(
 
 @derive(encoder, decoder)
 case class PriceOracleCalculatedState(
-  priceState: Map[TokenPair, Map[Id, List[PriceUpdate]]] = Map.empty
+  priceState: SortedMap[TokenPair, SortedMap[Id, List[PriceUpdate]]] = SortedMap.empty
 ) extends DataCalculatedState {
   def combine(that: PriceOracleCalculatedState, maxSize: NonNegInt): PriceOracleCalculatedState =
     (this.priceState.keys ++ that.priceState.keys).toSet.foldLeft(PriceOracleCalculatedState()) { (acc, tokenPair) =>
       val combined = combineTokenPair(
-        this.priceState.getOrElse(tokenPair, Map.empty[Id, List[PriceUpdate]]),
-        that.priceState.getOrElse(tokenPair, Map.empty[Id, List[PriceUpdate]]),
+        this.priceState.getOrElse(tokenPair, SortedMap.empty[Id, List[PriceUpdate]]),
+        that.priceState.getOrElse(tokenPair, SortedMap.empty[Id, List[PriceUpdate]]),
         maxSize
       )
       acc.copy(priceState = acc.priceState.updated(tokenPair, combined))
@@ -64,18 +66,18 @@ case class PriceOracleCalculatedState(
   def append(priceUpdate: Signed[PriceUpdate], maxSize: NonNegInt): PriceOracleCalculatedState = {
     val nodeId = priceUpdate.proofs.head.id
     val tokenPair = priceUpdate.tokenPair
-    val oldState = priceState.getOrElse(tokenPair, Map.empty[Id, List[PriceUpdate]])
+    val oldState = priceState.getOrElse(tokenPair, SortedMap.empty[Id, List[PriceUpdate]])
     val oldPrices = oldState.getOrElse(nodeId, List.empty)
     val newPrices = (oldPrices ++ List(priceUpdate.value)).takeRight(maxSize.value)
     copy(priceState = priceState.updated(tokenPair, oldState.updated(nodeId, newPrices)))
   }
 
   private def combineTokenPair(
-    oldState: Map[Id, List[PriceUpdate]],
-    newState: Map[Id, List[PriceUpdate]],
+    oldState: SortedMap[Id, List[PriceUpdate]],
+    newState: SortedMap[Id, List[PriceUpdate]],
     maxSize: NonNegInt
-  ): Map[Id, List[PriceUpdate]] =
-    (oldState.keys ++ newState.keys).toSet.foldLeft(Map.empty[Id, List[PriceUpdate]]) { (acc, nodeId) =>
+  ): SortedMap[Id, List[PriceUpdate]] =
+    (oldState.keys ++ newState.keys).toSet.foldLeft(SortedMap.empty[Id, List[PriceUpdate]]) { (acc, nodeId) =>
       val prices = ((oldState.get(nodeId), newState.get(nodeId)) match {
         case (Some(currPrices), Some(newPrices)) => currPrices ++ newPrices
         case (Some(currPrices), None)            => currPrices
