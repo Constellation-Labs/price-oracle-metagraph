@@ -47,7 +47,7 @@ object ValidationServiceSuite extends MutableIOSuite {
   override def sharedResource: Resource[IO, Res] =
     for {
       implicit0(sp: SecurityProvider[IO]) <- SecurityProvider.forAsync[IO]
-      implicit0(j: JsonSerializer[IO]) <- JsonSerializer.forSync[IO].asResource
+      implicit0(j: JsonSerializer[IO]) <- JsonSerializer.forAsync[IO].asResource
       h = Hasher.forJson[IO]
       kp <- KeyPairGenerator.makeKeyPair[IO].asResource
     } yield (sp, h, kp)
@@ -320,7 +320,8 @@ object ValidationServiceSuite extends MutableIOSuite {
           activeNodeCollaterals = None,
           nodeCollateralWithdrawals = None,
           priceState = None,
-          lastGlobalSnapshotsWithCurrency = None
+          lastGlobalSnapshotsWithCurrency = None,
+          mptRoot = None
         ),
         allowSpendBlocks = None,
         tokenLockBlocks = None,
