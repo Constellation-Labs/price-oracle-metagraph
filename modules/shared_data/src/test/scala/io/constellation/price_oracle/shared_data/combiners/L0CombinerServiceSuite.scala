@@ -46,7 +46,7 @@ object L0CombinerServiceSuite extends MutableIOSuite {
   override def sharedResource: Resource[IO, Res] =
     for {
       implicit0(sp: SecurityProvider[IO]) <- SecurityProvider.forAsync[IO]
-      implicit0(j: JsonSerializer[IO]) <- JsonSerializer.forSync[IO].asResource
+      implicit0(j: JsonSerializer[IO]) <- JsonSerializer.forAsync[IO].asResource
       implicit0(jh: Hasher[IO]) = Hasher.forJson[IO]
       context <- mkL0NodeContext(sp).asResource
       combiner <- L0CombinerService.make[IO](config).pure[IO].asResource
@@ -191,7 +191,8 @@ object L0CombinerServiceSuite extends MutableIOSuite {
             activeNodeCollaterals = None,
             nodeCollateralWithdrawals = None,
             priceState = None,
-            lastGlobalSnapshotsWithCurrency = None
+            lastGlobalSnapshotsWithCurrency = None,
+            mptRoot = None
           ),
           allowSpendBlocks = None,
           tokenLockBlocks = None,

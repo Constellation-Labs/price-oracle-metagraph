@@ -43,7 +43,7 @@ object Main
   override def dataApplication: Option[Resource[IO, BaseDataApplicationL0Service[IO]]] = (for {
     implicit0(sp: SecurityProvider[IO]) <- SecurityProvider.forAsync[IO]
     implicit0(supervisor: Supervisor[IO]) <- Supervisor[IO]
-    jsonBrotliBinaryCodec <- JsonBrotliBinaryCodec.forSync[IO].asResource
+    jsonBrotliBinaryCodec <- JsonBrotliBinaryCodec.forAsync[IO].asResource
     jsonBase64BinaryCodec <- JsonWithBase64BinaryCodec.forSync[IO, PriceUpdate].asResource
     jsonBinaryCodec <- JsonBinaryCodec.forSync[IO].asResource
     hasherBrotli = {

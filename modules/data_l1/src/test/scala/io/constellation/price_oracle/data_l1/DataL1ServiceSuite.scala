@@ -26,7 +26,7 @@ object DataL1ServiceSuite extends MutableIOSuite {
 
   override def sharedResource: Resource[IO, Res] = for {
     implicit0(sp: SecurityProvider[IO]) <- SecurityProvider.forAsync[IO]
-    implicit0(j: JsonSerializer[IO]) <- JsonSerializer.forSync[IO].asResource
+    implicit0(j: JsonSerializer[IO]) <- JsonSerializer.forAsync[IO].asResource
   } yield j
 
   test("data decoder") { js =>
